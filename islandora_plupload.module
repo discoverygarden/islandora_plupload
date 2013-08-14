@@ -48,6 +48,7 @@ function islandora_plupload_form_alter(&$form, &$form_state, $form_id) {
           'chunk_size' => variable_get('islandora_plupload_chunk_size', 15) . 'MB',
         );
         $element['#plupload_settings'] = $settings;
+        $element['#submit_element'] = '#edit-next';
       }
     }
 
@@ -61,13 +62,16 @@ function islandora_plupload_form_alter(&$form, &$form_state, $form_id) {
 function islandora_plupload_form_validate(&$form, &$form_state) {
   module_load_include('inc', 'islandora', 'includes/mime_detect');
   foreach ($form_state['complete form'] as $name => $element) {
-    if (isset($element['#type']) && $element['#type'] == 'plupload' && is_array($form_state['values'][$name][0])) {
+    if (isset($element['#type']) && $element['#type'] == 'plupload' && isset($form_state['values'][$name][0]) && is_array($form_state['values'][$name][0])) {
       $file = plupload_file_uri_to_object($form_state['values'][$name][0]["tmppath"]);
       $file->filename = $form_state['values'][$name][0]['name'];
       $mime_detect = new MimeDetect();
       $file->filemime = $mime_detect->getMimeType($file->filename);
       islandora_plupload_file_save($file);
       $form_state['values'][$name] = $file->fid;
+    }
+    elseif (isset($element['#type']) && $element['#type'] == 'plupload' && !is_numeric($form_state['values'][$name])) {
+      $form_state['values'][$name] = 0;
     }
   }
 }
