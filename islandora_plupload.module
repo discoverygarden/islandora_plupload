@@ -37,8 +37,29 @@ function islandora_plupload_permission() {
  */
 function islandora_plupload_form_alter(&$form, &$form_state, $form_id) {
   if (strpos($form_id, 'islandora') !== FALSE) {
-    $islandora_plupload_max = variable_get('islandora_plupload_max_filesize', 3000);
+    islandora_plupload_alter_managed_files($form);
+  }
+}
+
+/**
+ * Recursively change managed_file elements to plupload.
+ *
+ * @param array $form
+ *   A form or element array.
+ */
+function islandora_plupload_alter_managed_files(&$form) {
+  $islandora_plupload_max = variable_get('islandora_plupload_max_filesize', 3000);
+  if (is_array($form) && !empty($form)) {
     foreach ($form as &$element) {
+      // There must be a better way to get the children.
+      if (isset($element['#type']) && $element['#type'] === 'fieldset') {
+        $children = element_children($element);
+        if (is_array($children) && (count($children) > 0)) {
+          foreach ($children as $key) {
+            islandora_plupload_alter_managed_files($form[$key]);
+          }
+        }
+      }
       if (isset($element['#type']) && $element['#type'] === 'managed_file') {
         $element['#type'] = 'plupload';
         unset($element['#description']);
@@ -49,30 +70,34 @@ function islandora_plupload_form_alter(&$form, &$form_state, $form_id) {
         );
         $element['#plupload_settings'] = $settings;
         $element['#submit_element'] = '#edit-next';
+        $element['#element_validate'][] = 'islandora_plupload_element_validate';
       }
     }
-
-    $form['#validate'][] = 'islandora_plupload_form_validate';
   }
 }
 
 /**
- * Validation of the form_alter. Used to get files in place before _submit().
+ * Plupload element validation. Format the value as a managed_file would be.
+ *
+ * @TODO: handle form_state values where tree is TRUE (no Islandora cases yet)
+ *
+ * @param array $element
+ *   The form element.
+ * @param array $form_state
+ *   The form state.
  */
-function islandora_plupload_form_validate(&$form, &$form_state) {
+function islandora_plupload_element_validate($element, &$form_state) {
   module_load_include('inc', 'islandora', 'includes/mime_detect');
-  foreach ($form_state['complete form'] as $name => $element) {
-    if (isset($element['#type']) && $element['#type'] == 'plupload' && isset($form_state['values'][$name][0]) && is_array($form_state['values'][$name][0])) {
-      $file = plupload_file_uri_to_object($form_state['values'][$name][0]["tmppath"]);
-      $file->filename = $form_state['values'][$name][0]['name'];
-      $mime_detect = new MimeDetect();
-      $file->filemime = $mime_detect->getMimeType($file->filename);
-      islandora_plupload_file_save($file);
-      $form_state['values'][$name] = $file->fid;
-    }
-    elseif (isset($element['#type']) && $element['#type'] == 'plupload' && !is_numeric($form_state['values'][$name])) {
-      $form_state['values'][$name] = 0;
-    }
+  if (isset($element['#type']) && $element['#type'] == 'plupload' && isset($form_state['values'][$element['#name']][0]) && is_array($form_state['values'][$element['#name']][0])) {
+    $file = plupload_file_uri_to_object($form_state['values'][$element['#name']][0]["tmppath"]);
+    $file->filename = $form_state['values'][$element['#name']][0]['name'];
+    $mime_detect = new MimeDetect();
+    $file->filemime = $mime_detect->getMimeType($file->filename);
+    islandora_plupload_file_save($file);
+    $form_state['values'][$element['#name']] = $file->fid;
+  }
+  elseif (isset($element['#type']) && $element['#type'] == 'plupload' && !is_numeric($form_state['values'][$element['#name']])) {
+    $form_state['values'][$element['#name']] = 0;
   }
 }
 
