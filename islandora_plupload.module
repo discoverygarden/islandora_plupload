@@ -67,10 +67,12 @@ function islandora_plupload_alter_managed_files(&$form) {
         $settings = array(
           'max_file_size' => $islandora_plupload_max . 'MB',
           'chunk_size' => variable_get('islandora_plupload_chunk_size', 15) . 'MB',
+          'max_file_count' => 1,
         );
         $element['#plupload_settings'] = $settings;
         $element['#submit_element'] = '#edit-next';
         $element['#element_validate'][] = 'islandora_plupload_element_validate';
+        drupal_add_js(drupal_get_path('module', 'islandora_plupload') . '/js/element.js', array('type' => 'file', 'scope' => 'footer'));
       }
     }
   }
