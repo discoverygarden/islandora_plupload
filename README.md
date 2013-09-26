@@ -22,8 +22,12 @@ Plupload
 INSTALLATION
 ------------
 
-Install Plupload (http://www.drupal.org/project/plupload) and the associated library according to directions provided by the Plupload module.
-Enable Islandora Plupload and all managed_file form fields within forms with an ID containing "islandora" will be replaced by the Plupload widget.
+Install Plupload (http://www.drupal.org/project/plupload) and the associated
+library according to directions provided by the Plupload module except make
+sure to use a 1.x version of the library as 2.x is now the default download
+which does not work with the module without changes. Enable Islandora Plupload
+and all managed_file form fields within forms with an ID containing "islandora"
+will be replaced by the Plupload widget.
 
 CONFIGURATION
 -------------
