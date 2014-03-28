@@ -50,15 +50,10 @@ function islandora_plupload_form_alter(&$form, &$form_state, $form_id) {
 function islandora_plupload_alter_managed_files(&$form) {
   $islandora_plupload_max = variable_get('islandora_plupload_max_filesize', 3000);
   if (is_array($form) && !empty($form)) {
+    // There must be a better way to get elements of type 'managed_file'
     foreach ($form as &$element) {
-      // There must be a better way to get the children.
       if (isset($element['#type']) && $element['#type'] === 'fieldset') {
-        $children = element_children($element);
-        if (is_array($children) && (count($children) > 0)) {
-          foreach ($children as $key) {
-            islandora_plupload_alter_managed_files($form[$key]);
-          }
-        }
+        islandora_plupload_alter_managed_files($element);
       }
       if (isset($element['#type']) && $element['#type'] === 'managed_file') {
         $element['#type'] = 'plupload';
