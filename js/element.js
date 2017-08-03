@@ -1,5 +1,5 @@
 /*jshint browser: true, devel:true*/
-/*global jQuery, Drupal, plupload*/
+/*global jQuery, Drupal, Spinner*/
 /**
  * @file
  * Enforce max_file_count for Plupload elements.
@@ -31,6 +31,26 @@
                 $('.plupload_add', element).show('slow');
               }
             });
+
+            // If there is a spinner on the form then make it spin!
+            if (Drupal.behaviors.spinner !== undefined) {
+              if (settings.plupload[id].submit_element !== undefined) {
+                $(settings.plupload[id].submit_element).click(function(event) {
+                  if (event.originalEvent === undefined) {
+                    var form = $(this).parents('form');
+                    if (settings.spinner['edit-next'] !== undefined && form.data('submitted') === undefined) {
+                      form.data('submitted', true);
+                      var spin = settings.spinner['edit-next'];
+                      var spinner = new Spinner(spin.opts);
+                      spinner.spin(form.get(0));
+                      $('#edit-next').after(spin.message);
+                      $('#edit-next').hide();
+                      $('#edit-prev').hide();
+                    }
+                  }
+                });
+              }
+            }
           }
         });
       });
