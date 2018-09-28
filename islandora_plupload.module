@@ -92,6 +92,17 @@ function islandora_plupload_alter_managed_files(&$form) {
 function islandora_plupload_element_validate($element, &$form_state) {
   module_load_include('inc', 'islandora', 'includes/mime_detect');
   $element_value =& drupal_array_get_nested_value($form_state['values'], $element['#parents']);
+  // Validate each file.
+  foreach ($element_value as $file_value) {
+    $file_object = plupload_file_uri_to_object($file_value["tmppath"]);
+    $issues = module_invoke_all('file_validate', $file_object);
+    foreach ($issues as $issue) {
+      form_error(
+        $element,
+        t('@file: @issue', array('@file' => $file_value['name'], '@issue' => $issue))
+      );
+    }
+  }
   // Need to check to make sure there is a value here as we could have
   // optional plupload elements in forms.
   $first_element_value = isset($element_value) ? reset($element_value) : FALSE;
