@@ -44,10 +44,10 @@ function islandora_plupload_form_alter(&$form, &$form_state, $form_id) {
 /**
  * Recursively change managed_file elements to plupload.
  *
- * @param array $form
+ * @param array|null $form
  *   A form or element array.
  */
-function islandora_plupload_alter_managed_files(array &$form) {
+function islandora_plupload_alter_managed_files(&$form) {
   $islandora_plupload_max = variable_get('islandora_plupload_max_filesize', 3000);
   if (is_array($form) && !empty($form)) {
     $children = element_children($form);
@@ -93,15 +93,25 @@ function islandora_plupload_element_validate(array $element, array &$form_state)
   module_load_include('inc', 'islandora', 'includes/mime_detect');
   $element_value =& drupal_array_get_nested_value($form_state['values'], $element['#parents']);
   // Validate each file.
+  $rejected_file_count = 0;
   foreach ($element_value as $file_value) {
     $file_object = plupload_file_uri_to_object($file_value["tmppath"]);
     $issues = module_invoke_all('file_validate', $file_object);
+    if ($issues) {
+      $rejected_file_count++;
+    }
     foreach ($issues as $issue) {
       form_error(
         $element,
         t('@file: @issue', array('@file' => $file_value['name'], '@issue' => $issue))
       );
     }
+  }
+  if ($rejected_file_count > 0 && count($element_value) != $rejected_file_count) {
+    form_error(
+      $element,
+      t('There were validation errors with some of the uploaded files. After addressing the issue(s) please resubmit all files.')
+    );
   }
   // Need to check to make sure there is a value here as we could have
   // optional plupload elements in forms.
