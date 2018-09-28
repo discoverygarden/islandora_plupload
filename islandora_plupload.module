@@ -47,7 +47,7 @@ function islandora_plupload_form_alter(&$form, &$form_state, $form_id) {
  * @param array $form
  *   A form or element array.
  */
-function islandora_plupload_alter_managed_files(&$form) {
+function islandora_plupload_alter_managed_files(array &$form) {
   $islandora_plupload_max = variable_get('islandora_plupload_max_filesize', 3000);
   if (is_array($form) && !empty($form)) {
     $children = element_children($form);
@@ -89,7 +89,7 @@ function islandora_plupload_alter_managed_files(&$form) {
  * @param array $form_state
  *   The form state.
  */
-function islandora_plupload_element_validate($element, &$form_state) {
+function islandora_plupload_element_validate(array $element, array &$form_state) {
   module_load_include('inc', 'islandora', 'includes/mime_detect');
   $element_value =& drupal_array_get_nested_value($form_state['values'], $element['#parents']);
   // Validate each file.
