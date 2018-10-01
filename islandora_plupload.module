@@ -91,7 +91,9 @@ function islandora_plupload_alter_managed_files(&$form) {
  */
 function islandora_plupload_element_validate(array $element, array &$form_state) {
   module_load_include('inc', 'islandora', 'includes/mime_detect');
+  $messages = array();
   $element_value =& drupal_array_get_nested_value($form_state['values'], $element['#parents']);
+
   // Validate each file.
   $rejected_file_count = 0;
   foreach ($element_value as $file_value) {
@@ -101,18 +103,13 @@ function islandora_plupload_element_validate(array $element, array &$form_state)
       $rejected_file_count++;
     }
     foreach ($issues as $issue) {
-      form_error(
-        $element,
-        t('@file: @issue', array('@file' => $file_value['name'], '@issue' => $issue))
-      );
+      $messages[] = t('@file: @issue', array('@file' => $file_value['name'], '@issue' => $issue));
     }
   }
   if ($rejected_file_count > 0 && count($element_value) != $rejected_file_count) {
-    form_error(
-      $element,
-      t('There were validation errors with some of the uploaded files. After addressing the issue(s) please resubmit all files.')
-    );
+    $messages[] = t('There were validation errors with some of the uploaded files. After addressing the issue(s) please resubmit all files.');
   }
+
   // Need to check to make sure there is a value here as we could have
   // optional plupload elements in forms.
   $first_element_value = isset($element_value) ? reset($element_value) : FALSE;
@@ -128,8 +125,13 @@ function islandora_plupload_element_validate(array $element, array &$form_state)
   elseif (!is_numeric($element_value)) {
     $element_value = 0;
     if ($element['#upload_required']) {
-      form_error($element, t('@name field is required.', array('@name' => $element['#title'])));
+      $messages[] = t('@name field is required.', array('@name' => $element['#title']));
     }
+  }
+  // Drupal will only print one error per element.
+  $message = implode('<br/>', $messages);
+  if ($message) {
+    form_error($element, filter_xss($message, array('br')));
   }
 }
 
