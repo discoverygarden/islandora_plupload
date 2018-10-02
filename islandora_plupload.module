@@ -91,24 +91,9 @@ function islandora_plupload_alter_managed_files(&$form) {
  */
 function islandora_plupload_element_validate(array $element, array &$form_state) {
   module_load_include('inc', 'islandora', 'includes/mime_detect');
-  $messages = array();
-  $element_value =& drupal_array_get_nested_value($form_state['values'], $element['#parents']);
+  $messages = islandora_plupload_element_file_validate($element, $form_state);
 
-  // Validate each file.
-  $rejected_file_count = 0;
-  foreach ($element_value as $file_value) {
-    $file_object = plupload_file_uri_to_object($file_value["tmppath"]);
-    $issues = module_invoke_all('file_validate', $file_object);
-    if ($issues) {
-      $rejected_file_count++;
-    }
-    foreach ($issues as $issue) {
-      $messages[] = t('@file: @issue', array('@file' => $file_value['name'], '@issue' => $issue));
-    }
-  }
-  if ($rejected_file_count > 0 && count($element_value) != $rejected_file_count) {
-    $messages[] = t('There were validation errors with some of the uploaded files. After addressing the issue(s) please resubmit all files.');
-  }
+  $element_value =& drupal_array_get_nested_value($form_state['values'], $element['#parents']);
 
   // Need to check to make sure there is a value here as we could have
   // optional plupload elements in forms.
@@ -133,6 +118,42 @@ function islandora_plupload_element_validate(array $element, array &$form_state)
   if ($message) {
     form_error($element, filter_xss($message, array('br')));
   }
+}
+
+/**
+ * Validate a plupload based element with file_validate.
+ *
+ * Can handle multiple files.
+ *
+ * @param array $element
+ *   The form element.
+ * @param array $form_state
+ *   The form state.
+ *
+ * @return array
+ *   List of translated messages.
+ */
+function islandora_plupload_element_file_validate(array $element, array &$form_state) {
+  module_load_include('inc', 'islandora', 'includes/mime_detect');
+  $messages = array();
+  $element_value =& drupal_array_get_nested_value($form_state['values'], $element['#parents']);
+
+  // Validate each file.
+  $rejected_file_count = 0;
+  foreach ($element_value as $file_value) {
+    $file_object = plupload_file_uri_to_object($file_value["tmppath"]);
+    $issues = file_validate($file_object, $element['#upload_validators']);
+    if ($issues) {
+      $rejected_file_count++;
+    }
+    foreach ($issues as $issue) {
+      $messages[] = t('@file: @issue', array('@file' => $file_value['name'], '@issue' => $issue));
+    }
+  }
+  if ($rejected_file_count > 0 && count($element_value) != $rejected_file_count) {
+    $messages[] = t('There were validation errors with some of the uploaded files. After addressing the issue(s) please resubmit all files.');
+  }
+  return $messages;
 }
 
 /**
