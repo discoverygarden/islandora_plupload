@@ -141,7 +141,13 @@ function islandora_plupload_element_file_validate(array $element, array &$form_s
   // Validate each file.
   $rejected_file_count = 0;
   foreach ($element_value as $file_value) {
+    // Adapted from @see: plupload_element_validate() to facilitate full file
+    // validation.
     $file_object = plupload_file_uri_to_object($file_value["tmppath"]);
+    $destination = variable_get('file_default_scheme', 'public') . '://' . $file_value['name'];
+    $destination = file_stream_wrapper_uri_normalize($destination);
+    $file_object->filename = drupal_basename($destination);
+    $file_object->filemime = file_get_mimetype($destination);
     $issues = file_validate($file_object, $element['#upload_validators']);
     if ($issues) {
       $rejected_file_count++;
