@@ -36,7 +36,7 @@ function islandora_plupload_permission() {
  * Implements hook_form_alter().
  */
 function islandora_plupload_form_alter(&$form, &$form_state, $form_id) {
-  if (strpos($form_id, 'islandora') !== FALSE) {
+  if ($form_id !== 'islandora_default_thumbs_admin' && strpos($form_id, 'islandora') !== FALSE) {
     islandora_plupload_alter_managed_files($form);
   }
 }
