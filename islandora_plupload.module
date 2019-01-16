@@ -67,6 +67,7 @@ function islandora_plupload_alter_managed_files(&$form) {
         $element['#required'] = FALSE;
         unset($element['#description']);
         $element['#upload_validators']['file_validate_size'] = array($islandora_plupload_max * 1024 * 1024);
+        $element['#upload_validators']['file_validate_extensions'][0] = 'jpg jpeg gif png txt doc xls pdf ppt pps odt ods odp';
         $settings = array(
           'max_file_size' => $islandora_plupload_max . 'MB',
           'chunk_size' => variable_get('islandora_plupload_chunk_size', 15) . 'MB',
