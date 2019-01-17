@@ -67,7 +67,7 @@ function islandora_plupload_alter_managed_files(&$form) {
         $element['#required'] = FALSE;
         unset($element['#description']);
         $element['#upload_validators']['file_validate_size'] = array($islandora_plupload_max * 1024 * 1024);
-        $element['#upload_validators']['file_validate_extensions'][0] = 'jpg jpeg gif png txt doc xls pdf ppt pps odt ods odp';
+        $element['#upload_validators']['file_validate_extensions'][0] = islandora_plupload_get_available_extensions();
         $settings = array(
           'max_file_size' => $islandora_plupload_max . 'MB',
           'chunk_size' => variable_get('islandora_plupload_chunk_size', 15) . 'MB',
@@ -183,4 +183,33 @@ function islandora_plupload_file_save($file) {
 
   unset($file->original);
   return $file;
+}
+
+/**
+ * Get a list of available extensions for the object in context.
+ *
+ * @return string
+ *    List of allowable extensions for the object's datastrams.
+ */
+function islandora_plupload_get_available_extensions() {
+  module_load_include('inc', 'islandora', 'includes/mimetype.utils');
+  $extensions = "";
+  $object = menu_get_object('islandora_object', 2);
+  if (isset($object) && isset($object->models)) {
+    $models = $object->models;
+    // Remove the fedora-system:FedoraObject-3.0 model.
+    array_pop($models);
+
+    foreach ($models as $model) {
+      $dsids = islandora_get_datastreams_requirements_from_models($models);
+
+      foreach ($dsids as $dsid) {
+        $extensions .= implode(" ", islandora_get_extensions_for_datastream($object, $dsid['id']));
+        $extensions .= " ";
+      }
+    }
+    // Not sure why but the module greys out acceptable file types without xls ext added.
+    $extensions .= 'xls';
+  }
+  return $extensions;
 }
