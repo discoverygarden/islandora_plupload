@@ -209,8 +209,10 @@ function islandora_plupload_get_available_extensions() {
     foreach ($dsids as $dsid) {
       $extensions .= implode(" ", islandora_get_extensions_for_datastream($object, $dsid['id']));
       $extensions .= " ";
+
     }
-    $extensions = trim($extensions);
+    // XXX Module disables acceptable file types without xls ext added.
+    $extensions .= 'xls';
   }
   return $extensions;
 }
