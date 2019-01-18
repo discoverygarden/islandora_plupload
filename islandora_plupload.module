@@ -67,7 +67,12 @@ function islandora_plupload_alter_managed_files(&$form) {
         $element['#required'] = FALSE;
         unset($element['#description']);
         $element['#upload_validators']['file_validate_size'] = array($islandora_plupload_max * 1024 * 1024);
-        $element['#upload_validators']['file_validate_extensions'][0] = islandora_plupload_get_available_extensions();
+        if (isset($form['file']['#upload_validators']['file_validate_extensions'][0])) {
+          $element['#upload_validators']['file_validate_extensions'][0] = $form['file']['#upload_validators']['file_validate_extensions'][0];
+        }
+        else {
+          $element['#upload_validators']['file_validate_extensions'][0] = islandora_plupload_get_available_extensions();
+        }
         $settings = array(
           'max_file_size' => $islandora_plupload_max . 'MB',
           'chunk_size' => variable_get('islandora_plupload_chunk_size', 15) . 'MB',
@@ -204,10 +209,8 @@ function islandora_plupload_get_available_extensions() {
     foreach ($dsids as $dsid) {
       $extensions .= implode(" ", islandora_get_extensions_for_datastream($object, $dsid['id']));
       $extensions .= " ";
-
     }
-    // XXX Module greys out acceptable file types without xls ext added.
-    $extensions .= 'xls';
+    $extensions = trim($extensions);
   }
   return $extensions;
 }
