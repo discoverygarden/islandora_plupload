@@ -55,6 +55,32 @@ function islandora_plupload_alter_managed_files(&$form) {
       $element =& $form[$element_key];
       islandora_plupload_alter_managed_files($element);
       if (isset($element['#type']) && $element['#type'] === 'managed_file' && !(isset($element['#islandora_plupload_do_not_alter']) && $element['#islandora_plupload_do_not_alter'])) {
+        // The Plupload and Islandora Plupload modules create a bug that prevents users from
+        // adding datastreams and replacing datastreams that allow any file type as a result
+        // of validating a files extension (ex. .jpg) against an empty string.
+        $current_path = current_path();
+        if (strpos($current_path, 'datastreams/add')) {
+          $element['#process'] = array(
+            'islandora_plupload_element_processs'
+          );
+        }
+        elseif (preg_match('/\/datastream\/.*\/replace/', $current_path)) {
+          // Getting the DSID by ripping it out of the form dsid markup.
+          // May be a better way to get the dsid at this point.
+          $dsid = strip_tags($form['dsid']['#markup']);
+          $dsid = substr($dsid, 5);
+          $$dsid = trim($dsid);
+          $object = menu_get_object('islandora_object', 2);
+          if (isset($object)) {
+            module_load_include('inc', 'islandora', 'includes/mimetype.utils');
+            $extensions = implode(" ", islandora_get_extensions_for_datastream($object, $dsid));
+            if (!$extensions) {
+              $element['#process'] = array(
+                'islandora_plupload_element_processs'
+              );
+            }
+          }
+        }
         $element['#type'] = 'plupload';
         // Element value validation is hard-coded to occur in form.inc
         // function _form_validate() before the elements own validation hooks
@@ -67,12 +93,6 @@ function islandora_plupload_alter_managed_files(&$form) {
         $element['#required'] = FALSE;
         unset($element['#description']);
         $element['#upload_validators']['file_validate_size'] = array($islandora_plupload_max * 1024 * 1024);
-        if (isset($form['file']['#upload_validators']['file_validate_extensions'][0])) {
-          $element['#upload_validators']['file_validate_extensions'][0] = $form['file']['#upload_validators']['file_validate_extensions'][0];
-        }
-        else {
-          $element['#upload_validators']['file_validate_extensions'][0] = islandora_plupload_get_available_extensions();
-        }
         $settings = array(
           'max_file_size' => $islandora_plupload_max . 'MB',
           'chunk_size' => variable_get('islandora_plupload_chunk_size', 15) . 'MB',
@@ -98,7 +118,6 @@ function islandora_plupload_alter_managed_files(&$form) {
 function islandora_plupload_element_validate(array $element, array &$form_state) {
   module_load_include('inc', 'islandora', 'includes/mime_detect');
   $messages = islandora_plupload_element_file_validate($element, $form_state);
-
   $element_value =& drupal_array_get_nested_value($form_state['values'], $element['#parents']);
 
   // Need to check to make sure there is a value here as we could have
@@ -191,28 +210,24 @@ function islandora_plupload_file_save($file) {
 }
 
 /**
- * Get a list of available extensions for the object in context.
+ * Custom process callback for the plupload element.
  *
- * @return string
- *   List of allowable extensions for the object's datastrams.
+ * XXX: Simply unsets the 'file_validate_extensions' portion of the list of
+ * upload validators. This will squash any attempts to specify a custom list of
+ * extension validators. Allowing for custom lists of extension validators AND
+ * for extension validation to be bypassed would require ripping out a lot of
+ * hard-baked functionality in the pluploader; we may need to revisit if this
+ * becomes necessary, but the current use cases call for no validation.
+ *
+ * XXX: Reference Islandora Research data module.
  */
-function islandora_plupload_get_available_extensions() {
-  module_load_include('inc', 'islandora', 'includes/mimetype.utils');
-  $extensions = "";
-  $object = menu_get_object('islandora_object', 2);
-  if (isset($object) && isset($object->models)) {
-    $models = $object->models;
-    // Remove the fedora-system:FedoraObject-3.0 model.
-    array_pop($models);
-    $dsids = islandora_get_datastreams_requirements_from_models($models);
-
-    foreach ($dsids as $dsid) {
-      $extensions .= implode(" ", islandora_get_extensions_for_datastream($object, $dsid['id']));
-      $extensions .= " ";
-
-    }
-    // XXX Module disables acceptable file types without xls ext added.
-    $extensions .= 'xls';
+function islandora_plupload_element_processs($element) {
+  unset($element['#upload_validators']['file_validate_extensions']);
+  if (isset($element['#description'])) {
+    $element['#description'] = theme('file_upload_help', array(
+      'description' => '',
+      'upload_validators' => $element['#upload_validators'],
+    ));
   }
-  return $extensions;
+  return $element;
 }
