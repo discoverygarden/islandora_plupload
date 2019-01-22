@@ -55,13 +55,14 @@ function islandora_plupload_alter_managed_files(&$form) {
       $element =& $form[$element_key];
       islandora_plupload_alter_managed_files($element);
       if (isset($element['#type']) && $element['#type'] === 'managed_file' && !(isset($element['#islandora_plupload_do_not_alter']) && $element['#islandora_plupload_do_not_alter'])) {
-        // The Plupload and Islandora Plupload modules create a bug that prevents users from
-        // adding datastreams and replacing datastreams that allow any file type as a result
-        // of validating a files extension (ex. .jpg) against an empty string.
+        // The Plupload and Islandora Plupload modules create a bug that
+        // prevents users from adding datastreams and replacing datastreams that
+        // allow any file type as a result of validating a files extension
+        // (ex. .jpg) against an empty string.
         $current_path = current_path();
         if (strpos($current_path, 'datastreams/add')) {
           $element['#process'] = array(
-            'islandora_plupload_element_processs'
+            'islandora_plupload_element_processs',
           );
         }
         elseif (preg_match('/\/datastream\/.*\/replace/', $current_path)) {
@@ -76,7 +77,7 @@ function islandora_plupload_alter_managed_files(&$form) {
             $extensions = implode(" ", islandora_get_extensions_for_datastream($object, $dsid));
             if (!$extensions) {
               $element['#process'] = array(
-                'islandora_plupload_element_processs'
+                'islandora_plupload_element_processs',
               );
             }
           }
