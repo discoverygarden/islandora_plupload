@@ -70,7 +70,7 @@ function islandora_plupload_alter_managed_files(&$form) {
           // May be a better way to get the dsid at this point.
           $dsid = strip_tags($form['dsid']['#markup']);
           $dsid = substr($dsid, 5);
-          $$dsid = trim($dsid);
+          $dsid = trim($dsid);
           $object = menu_get_object('islandora_object', 2);
           if (isset($object)) {
             module_load_include('inc', 'islandora', 'includes/mimetype.utils');
