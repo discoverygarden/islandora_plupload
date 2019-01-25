@@ -69,11 +69,12 @@ function islandora_plupload_alter_managed_files(&$form) {
           );
         }
         elseif ($menu_path['path'] === $replace_datastream_path) {
-          $dsid = $menu_path['page_arguments'][1]->id;
-          $object = $menu_path['page_arguments'][1]->parent;
-          if (isset($object)) {
+          if ($menu_path['page_arguments'][1]) {
             module_load_include('inc', 'islandora', 'includes/mimetype.utils');
+            $dsid = $menu_path['page_arguments'][1]->id;
+            $object = $menu_path['page_arguments'][1]->parent;
             $extensions = implode(" ", islandora_get_extensions_for_datastream($object, $dsid));
+
             if (!$extensions) {
               $element['#process'] = array(
                 'islandora_plupload_element_processs',
