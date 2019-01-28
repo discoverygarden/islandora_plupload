@@ -55,6 +55,33 @@ function islandora_plupload_alter_managed_files(&$form) {
       $element =& $form[$element_key];
       islandora_plupload_alter_managed_files($element);
       if (isset($element['#type']) && $element['#type'] === 'managed_file' && !(isset($element['#islandora_plupload_do_not_alter']) && $element['#islandora_plupload_do_not_alter'])) {
+        // The Plupload and Islandora Plupload modules create a bug that
+        // prevents users from adding and replacing datastreams that
+        // allow any file type as a result of validating a file's extension
+        // (ex. .jpg) against an empty string.
+        $menu_path = menu_get_item();
+        $add_datastream_path = 'islandora/object/%/manage/datastreams/add';
+        $replace_datastream_path = 'islandora/object/%/datastream/%/replace';
+
+        if ($menu_path['path'] === $add_datastream_path) {
+          $element['#process'] = array(
+            'islandora_plupload_element_processs',
+          );
+        }
+        elseif ($menu_path['path'] === $replace_datastream_path) {
+          if ($menu_path['page_arguments'][1]) {
+            module_load_include('inc', 'islandora', 'includes/mimetype.utils');
+            $dsid = $menu_path['page_arguments'][1]->id;
+            $object = $menu_path['page_arguments'][1]->parent;
+            $extensions = implode(" ", islandora_get_extensions_for_datastream($object, $dsid));
+
+            if (!$extensions) {
+              $element['#process'] = array(
+                'islandora_plupload_element_processs',
+              );
+            }
+          }
+        }
         $element['#type'] = 'plupload';
         // Element value validation is hard-coded to occur in form.inc
         // function _form_validate() before the elements own validation hooks
@@ -92,7 +119,6 @@ function islandora_plupload_alter_managed_files(&$form) {
 function islandora_plupload_element_validate(array $element, array &$form_state) {
   module_load_include('inc', 'islandora', 'includes/mime_detect');
   $messages = islandora_plupload_element_file_validate($element, $form_state);
-
   $element_value =& drupal_array_get_nested_value($form_state['values'], $element['#parents']);
 
   // Need to check to make sure there is a value here as we could have
@@ -182,4 +208,27 @@ function islandora_plupload_file_save($file) {
 
   unset($file->original);
   return $file;
+}
+
+/**
+ * Custom process callback for the plupload element.
+ *
+ * XXX: Simply unsets the 'file_validate_extensions' portion of the list of
+ * upload validators. This will squash any attempts to specify a custom list of
+ * extension validators. Allowing for custom lists of extension validators AND
+ * for extension validation to be bypassed would require ripping out a lot of
+ * hard-baked functionality in the pluploader; we may need to revisit if this
+ * becomes necessary, but the current use cases call for no validation.
+ *
+ * XXX: Reference Islandora Research data module.
+ */
+function islandora_plupload_element_processs($element) {
+  unset($element['#upload_validators']['file_validate_extensions']);
+  if (isset($element['#description'])) {
+    $element['#description'] = theme('file_upload_help', array(
+      'description' => '',
+      'upload_validators' => $element['#upload_validators'],
+    ));
+  }
+  return $element;
 }
