@@ -56,31 +56,13 @@ function islandora_plupload_alter_managed_files(&$form) {
       islandora_plupload_alter_managed_files($element);
       if (isset($element['#type']) && $element['#type'] === 'managed_file' && !(isset($element['#islandora_plupload_do_not_alter']) && $element['#islandora_plupload_do_not_alter'])) {
         // The Plupload and Islandora Plupload modules create a bug that
-        // prevents users from adding and replacing datastreams that
-        // allow any file type as a result of validating a file's extension
-        // (ex. .jpg) against an empty string.
-        $menu_path = menu_get_item();
-        $add_datastream_path = 'islandora/object/%/manage/datastreams/add';
-        $replace_datastream_path = 'islandora/object/%/datastream/%/replace';
-
-        if ($menu_path['path'] === $add_datastream_path) {
+        // prevents users from adding and replacing content that accepts any
+        // file type as a result of validating a file's extension (ex. .jpg)
+        // against an empty string.
+        if (isset($form['file']['#upload_validators']['file_validate_extensions']) && !$form['file']['#upload_validators']['file_validate_extensions'][0]) {
           $element['#process'] = array(
             'islandora_plupload_element_processs',
           );
-        }
-        elseif ($menu_path['path'] === $replace_datastream_path) {
-          if ($menu_path['page_arguments'][1]) {
-            module_load_include('inc', 'islandora', 'includes/mimetype.utils');
-            $dsid = $menu_path['page_arguments'][1]->id;
-            $object = $menu_path['page_arguments'][1]->parent;
-            $extensions = implode(" ", islandora_get_extensions_for_datastream($object, $dsid));
-
-            if (!$extensions) {
-              $element['#process'] = array(
-                'islandora_plupload_element_processs',
-              );
-            }
-          }
         }
         $element['#type'] = 'plupload';
         // Element value validation is hard-coded to occur in form.inc
