@@ -112,6 +112,7 @@ function islandora_plupload_element_validate(array $element, array &$form_state)
     $file->filename = $first_element_value['name'];
     $mime_detect = new MimeDetect();
     $file->filemime = $mime_detect->getMimeType($file->filename);
+    $file->status = 0;
     islandora_plupload_file_save($file);
     $element_value = $file->fid;
   }
